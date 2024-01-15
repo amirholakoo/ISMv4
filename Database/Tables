@@ -52,40 +52,6 @@ CREATE TABLE RawMaterials (
     FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE Shipments (
-    ShipmentID INT AUTO_INCREMENT PRIMARY KEY,
-    Status ENUM('Incoming','Outgoing','Delivered', 'Cancelled'),
-    Location ENUM('Entrance','LoadingUnloading','LoadedUnloaded','Delivered'),
-    TruckID INT,
-    LicenseNumber VARCHAR(255),
-    EntryTime DATETIME,
-    CustomerName VARCHAR(255),
-    SupplierName VARCHAR(255),
-    ListofReels TEXT,
-    SalesID INT,
-    PricePerKG DECIMAL(10,2),
-    ShippingCost DECIMAL(10,2),
-    MaterialID INT,
-    MaterialType VARCHAR(255),
-    MaterialName VARCHAR(255),
-    PurchaseID INT,
-    VAT ENUM('YES','NO'),
-    InvoiceStatus ENUM('Sent','Received','NA'),
-    PaymentStatus ENUM('Paid','Terms','Unknown', 'Cancelled'),
-    Weight1 DECIMAL(10,2),
-    Weight1Time DATETIME,
-    UnloadLocation VARCHAR(255),
-    Weight2 DECIMAL(10,2),
-    Weight2Time DATETIME,
-    ExitTime DATETIME,
-    DocumentInfo TEXT,
-    Comments TEXT,
-    FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID),
-    FOREIGN KEY (SalesID) REFERENCES Sales(SaleID),
-    FOREIGN KEY (PurchaseID) REFERENCES Purchases(PurchaseID),
-    FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
-) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
 CREATE TABLE Sales (
     SaleID INT AUTO_INCREMENT PRIMARY KEY,
     Date DATETIME,
@@ -136,6 +102,42 @@ CREATE TABLE Purchases (
     
     FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE Shipments (
+    ShipmentID INT AUTO_INCREMENT PRIMARY KEY,
+    Status ENUM('Incoming','Outgoing','Delivered', 'Cancelled'),
+    Location ENUM('Entrance','LoadingUnloading','LoadedUnloaded','Delivered'),
+    TruckID INT,
+    LicenseNumber VARCHAR(255),
+    EntryTime DATETIME,
+    CustomerName VARCHAR(255),
+    SupplierName VARCHAR(255),
+    ListofReels TEXT,
+    SalesID INT,
+    PricePerKG DECIMAL(10,2),
+    ShippingCost DECIMAL(10,2),
+    MaterialID INT,
+    MaterialType VARCHAR(255),
+    MaterialName VARCHAR(255),
+    PurchaseID INT,
+    VAT ENUM('YES','NO'),
+    InvoiceStatus ENUM('Sent','Received','NA'),
+    PaymentStatus ENUM('Paid','Terms','Unknown', 'Cancelled'),
+    Weight1 DECIMAL(10,2),
+    Weight1Time DATETIME,
+    UnloadLocation VARCHAR(255),
+    Weight2 DECIMAL(10,2),
+    Weight2Time DATETIME,
+    ExitTime DATETIME,
+    DocumentInfo TEXT,
+    Comments TEXT,
+    FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID),
+    FOREIGN KEY (SalesID) REFERENCES Sales(SaleID),
+    FOREIGN KEY (PurchaseID) REFERENCES Purchases(PurchaseID),
+    FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+
 
 ALTER TABLE Sales
 ADD FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID);
