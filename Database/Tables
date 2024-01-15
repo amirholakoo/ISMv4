@@ -106,8 +106,8 @@ CREATE TABLE Sales (
     DocumentInfo TEXT,
     Comments TEXT,
     FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
-    FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID),
-    FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID)
+    FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID)
+    
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE Purchases (
@@ -133,10 +133,18 @@ CREATE TABLE Purchases (
     Comments TEXT,
     FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID),
     FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID),
-    FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID),
+    
     FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+ALTER TABLE Sales
+ADD FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID);
+
+ALTER TABLE Purchases
+ADD FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID);
+
 ALTER TABLE Shipments ADD Quantity INT;
-ALTER TABLE Purchases ADD Quantity INT;
+
+ALTER TABLE Purchases 
+ADD Quantity INT FOREIGN KEY (Quantity) REFERENCES Shipments(Quantity);;
 
