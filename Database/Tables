@@ -147,6 +147,8 @@ ADD FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID);
 
 ALTER TABLE Shipments ADD Quantity INT;
 
+ALTER TABLE Purchases ADD Quantity INT;
+
 ALTER TABLE Purchases 
 ADD FOREIGN KEY (Quantity) REFERENCES Shipments(Quantity);
 
