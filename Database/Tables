@@ -1,0 +1,134 @@
+CREATE TABLE Trucks (
+    TruckID INT AUTO_INCREMENT PRIMARY KEY,
+    LicenseNumber VARCHAR(255) UNIQUE NOT NULL,
+    DriverName VARCHAR(255),
+    Phone VARCHAR(20),
+    Status ENUM('Free','Busy'),
+    Location VARCHAR(255)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE Customers (
+    CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerName VARCHAR(255) NOT NULL,
+    Address TEXT,
+    Phone VARCHAR(20),
+    Status VARCHAR(255),
+    Comments TEXT
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE Products (
+    ReelNumber VARCHAR(255) PRIMARY KEY,
+    Width INT,
+    GSM INT,
+    Length INT,
+    Grade VARCHAR(255),
+    Breaks VARCHAR(255),
+    Comments TEXT,
+    qrCode TEXT,
+    Location VARCHAR(255),
+    Status ENUM('In-Stock','Sold','Delivered')
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE Suppliers (
+    SupplierID INT AUTO_INCREMENT PRIMARY KEY,
+    SupplierName VARCHAR(255) NOT NULL,
+    Address TEXT,
+    Phone VARCHAR(20),
+    Status VARCHAR(255),
+    Comments TEXT
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE RawMaterials (
+    MaterialID INT AUTO_INCREMENT PRIMARY KEY,
+    SupplierID INT,
+    MaterialType ENUM('OCC','Office Waste','Chemical','Parts', 'Others'),
+    MaterialName VARCHAR(255),
+    Status VARCHAR(255),
+    Comments TEXT,
+    FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE Shipments (
+    ShipmentID INT AUTO_INCREMENT PRIMARY KEY,
+    Status ENUM('Incoming','Outgoing','Delivered', 'Cancelled'),
+    Location ENUM('Entrance','LoadingUnloading','LoadedUnloaded','Delivered'),
+    TruckID INT,
+    LicenseNumber VARCHAR(255),
+    EntryTime DATETIME,
+    CustomerName VARCHAR(255),
+    SupplierName VARCHAR(255),
+    ListofReels TEXT,
+    SalesID INT,
+    PricePerKG DECIMAL(10,2),
+    ShippingCost DECIMAL(10,2),
+    MaterialID INT,
+    MaterialType VARCHAR(255),
+    MaterialName VARCHAR(255),
+    PurchaseID INT,
+    VAT ENUM('YES','NO'),
+    InvoiceStatus ENUM('Sent','Received','NA'),
+    PaymentStatus ENUM('Paid','Terms','Unknown', 'Cancelled'),
+    Weight1 DECIMAL(10,2),
+    Weight1Time DATETIME,
+    UnloadLocation VARCHAR(255),
+    Weight2 DECIMAL(10,2),
+    Weight2Time DATETIME,
+    ExitTime DATETIME,
+    DocumentInfo TEXT,
+    Comments TEXT,
+    FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID),
+    FOREIGN KEY (SalesID) REFERENCES Sales(SaleID),
+    FOREIGN KEY (PurchaseID) REFERENCES Purchases(PurchaseID),
+    FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE Sales (
+    SaleID INT AUTO_INCREMENT PRIMARY KEY,
+    Date DATETIME,
+    CustomerID INT,
+    TruckID INT,
+    LicenseNumber VARCHAR(255),
+    ShipmentID INT,
+    ListofReels TEXT,
+    Weight1 DECIMAL(10,2),
+    Weight2 DECIMAL(10,2),
+    NetWeight DECIMAL(10,2),
+    ShippingCost DECIMAL(10,2),
+    VAT ENUM('YES','NO'),
+    TotalPrice DECIMAL(10,2),
+    InvoiceStatus ENUM('Sent','NA'),
+    PaymentStatus ENUM('Paid','Terms','Unknown', 'Cancelled'),
+    InvoiceNumber VARCHAR(255),
+    DocumentInfo TEXT,
+    Comments TEXT,
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
+    FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID),
+    FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE Purchases (
+    PurchaseID INT AUTO_INCREMENT PRIMARY KEY,
+    Date DATETIME,
+    SupplierID INT,
+    TruckID INT,
+    LicenseNumber VARCHAR(255),
+    ShipmentID INT,
+    MaterialID INT,
+    MaterialType VARCHAR(255),
+    MaterialName VARCHAR(255),
+    Weight1 DECIMAL(10,2),
+    Weight2 DECIMAL(10,2),
+    NetWeight DECIMAL(10,2),
+    ShippingCost DECIMAL(10,2),
+    VAT ENUM('YES','NO'),
+    TotalPrice DECIMAL(10,2),
+    InvoiceStatus ENUM('Received','NA'),
+    PaymentStatus ENUM('Paid','Terms','Unknown', 'Cancelled'),
+    InvoiceNumber VARCHAR(255),
+    DocumentInfo TEXT,
+    Comments TEXT,
+    FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID),
+    FOREIGN KEY (TruckID) REFERENCES Trucks(TruckID),
+    FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID),
+    FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
