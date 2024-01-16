@@ -17,3 +17,5 @@ UPDATE RawMaterials rm
 INNER JOIN Suppliers s ON rm.SupplierID = s.SupplierID
 
 SET rm.SupplierName = s.SupplierName;
+
+ALTER TABLE Shipments MODIFY COLUMN Location ENUM('Entrance','LoadingUnloading','LoadedUnloaded','Delivered', 'Office');
