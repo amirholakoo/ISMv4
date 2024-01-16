@@ -45,7 +45,8 @@ CREATE TABLE Suppliers (
 CREATE TABLE RawMaterials (
     MaterialID INT AUTO_INCREMENT PRIMARY KEY,
     SupplierID INT,
-    MaterialType ENUM('OCC','Office Waste','Chemical','Parts', 'Others'),
+    SupplierName VARCHAR(255),
+    MaterialType VARCHAR(255),
     MaterialName VARCHAR(255),
     Status VARCHAR(255),
     Comments TEXT,
