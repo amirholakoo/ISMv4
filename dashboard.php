@@ -37,7 +37,7 @@ if ($result->num_rows > 0) {
     echo "<table><tr><th>ID</th><th>Status</th><th>Location</th><th>📦 Quantity</th></tr>";
     // Output data of each row
     while($row = $result->fetch_assoc()) {
-        echo "<tr><td>".$row["ShipmentID"]."</td><td>".$row["Status"]."</td><td>".$row["Location"]."</td><td>".$row["Quantity"]."</td></tr>";
+        echo "<tr><td>".$row["ShipmentID"]."</td><td>".$row["LicenseNumber"]."</td><td>".$row["Status"]."</td><td>".$row["Location"]."</td><td>".$row["Quantity"]."</td><td>".$row["Comments"]."</td></tr>";
     }
     echo "</table>";
 } else {
