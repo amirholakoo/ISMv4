@@ -35,11 +35,14 @@ while ($row = $suppliersResult->fetch_assoc()) {
 echo "</select> <br>";
 
 echo "Material Type: <select name='material_type'>
-    <option value='OCC'>OCC (قراضه کاغذ و مقوا)</option>
-    <option value='Office Waste'>Office Waste (زباله‌های اداری)</option>
+    <option value='OCC'>OCC (آخال کاغذ و مقوا)</option>
+    <option value='Offset'>Offset (پوشال سفید )</option>
+    <option value='Office'>Office Forms (پرونده)</option>
     <option value='Chemical'>Chemical (مواد شیمیایی)</option>
     <option value='Parts'>Parts (قطعات)</option>
-    <option value='Core'>Core (هسته)</option>
+    <option value='Production'>Production (تولید)</option>
+    <option value='Core'>Core (لوله کر)</option>
+    <option value='NEW'>NEW (جدید)</option>
 </select> <br>";
 
 echo "Material Name: <input type='text' name='material_name' required> <br>";
