@@ -90,31 +90,33 @@ echo "<option value=''>Choose a Width</option>";
 $widthSql = "SELECT DISTINCT Width FROM Products WHERE Status = 'In-Stock' ORDER BY Width";
 $widthResult = $conn->query($widthSql);
 while ($row = $widthResult->fetch_assoc()) {
-echo "<option value='".$row["Width"]."'>".$row["Width"]." cm</option>";
+    echo "<option value='".$row["Width"]."'>".$row["Width"]." cm</option>";
 }
 echo "</select>";
 echo "</form>";
 
 // Displaying in-stock rolls based on selected width
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["width"])) {
-$selectedWidth = $_POST["width"];
-$rollsSql = "SELECT ReelNumber FROM Products WHERE Width = $selectedWidth AND Status = 'In-Stock'";
-$rollsResult = $conn->query($rollsSql);
-if ($rollsResult->num_rows > 0) {
-    echo "<h2>In-Stock Rolls (Width: $selectedWidth cm):</h2>";
-    echo "<form action='forklift_interface.php' method='post'>";
-    echo "<input type='hidden' name='width' value='$selectedWidth'>";
-    echo "<input type='hidden' name='license_number_outgoing' value='" . ($_POST['license_number_outgoing'] ?? '') . "'>";
-    echo "<table><tr><th>Select</th><th>Reel Number</th></tr>";
+    $selectedWidth = $_POST["width"];
+    $rollsSql = "SELECT ReelNumber FROM Products WHERE Width = $selectedWidth AND Status = 'In-Stock'";
+    $rollsResult = $conn->query($rollsSql);
 
-    while ($row = $rollsResult->fetch_assoc()) {
-        echo "<tr><td><input type='checkbox' name='selectedRolls[]' value='".$row["ReelNumber"]."'></td><td>".$row["ReelNumber"]."</td></tr>";
-    }
-    echo "</table>";
-    echo "<input type='submit' name='recordSale' value='Record Sale'>";
-    echo "</form>";
+    if ($rollsResult->num_rows > 0) {
+        echo "<h2>In-Stock Rolls (Width: $selectedWidth cm):</h2>";
+        echo "<form action='forklift_interface.php' method='post'>";
+        echo "<input type='hidden' name='width' value='$selectedWidth'>";
+        echo "<input type='hidden' name='license_number_outgoing' value='" . ($_POST['license_number_outgoing'] ?? '') . "'>";
+        echo "<table><tr><th>Select</th><th>Reel Number</th></tr>";
+
+        while ($row = $rollsResult->fetch_assoc()) {
+            echo "<tr><td><input type='checkbox' name='selectedRolls[]' value='".$row["ReelNumber"]."'></td><td>".$
+row["ReelNumber"]."</td></tr>";
+}
+echo "</table>";
+echo "<input type='submit' name='recordSale' value='Record Sale'>";
+echo "</form>";
 } else {
-    echo "No in-stock rolls for selected width.";
+echo "No in-stock rolls for selected width.";
 }
 }
 
