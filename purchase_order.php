@@ -3,7 +3,23 @@ include 'connect_db.php';
 
 // Update Shipment with Supplier Info
 if (isset($_POST['update_shipment'])) {
-    // [Existing code to update shipment with supplier info]
+    $licenseNumber = $_POST['license_number_shipment'];
+    $supplierName = $_POST['supplier_name'];
+    $materialID = $_POST['material_id'];
+
+    // Fetch Material Name from RawMaterials table
+    $materialQuery = $conn->prepare("SELECT MaterialName FROM RawMaterials WHERE MaterialID = ?");
+    $materialQuery->bind_param("i", $materialID);
+    $materialQuery->execute();
+    $materialResult = $materialQuery->get_result();
+    $materialName = ($materialResult->fetch_assoc())['MaterialName'];
+
+    $updateShipmentQuery = "UPDATE Shipments SET SupplierName = ?, MaterialID = ?, MaterialName = ? WHERE LicenseNumber = ? AND Status = 'Incoming'";
+    $updateShipment = $conn->prepare($updateShipmentQuery);
+    $updateShipment->bind_param("siis", $supplierName, $materialID, $materialName, $licenseNumber);
+    $updateShipment->execute();
+
+    echo "<p style='color:green;'>Shipment updated with supplier info.</p>";
 }
 
 // Handle Complete Purchase Details
@@ -51,7 +67,9 @@ if (isset($_POST['record_purchase'])) {
 }
 
 // Fetch Incoming Trucks
-// [Existing code to fetch incoming trucks forboth sections]
+$incomingTrucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Incoming'";
+$incomingTrucksResult = $conn->query($incomingTrucksQuery);
+
 
 // Fetch Suppliers
 $suppliersQuery = "SELECT SupplierID, SupplierName FROM Suppliers";
@@ -60,8 +78,27 @@ $suppliersResult = $conn->query($suppliersQuery);
 // HTML Form for Updating Shipment with Supplier Info
 echo "<form method='post'>";
 echo "<h2>Update Shipment with Supplier Info</h2>";
-// [Existing form code for updating shipment]
+echo "Truck (License Number): <select name='license_number_shipment'>";
+while ($row = $incomingTrucksResult->fetch_assoc()) {
+    echo "<option value='" . $row['LicenseNumber'] . "'>" . $row['LicenseNumber'] . "</option>";
+}
+echo "</select> <br>";
+
+echo "Supplier Name: <select name='supplier_name' onchange='loadMaterials(this.value)'>";
+echo "<option value=''>Select Supplier</option>";
+while ($row = $suppliersResult->fetch_assoc()) {
+    echo "<option value='" . $row['SupplierID'] . "'>" . $row['SupplierName'] . "</option>";
+}
+echo "</select> <br>";
+
+echo "Material ID: <select name='material_id' id='materialDropdown'>";
+echo "<option value=''>Select Material</option>";
+// Options will be loaded based on selected supplier via JavaScript
+echo "</select> <br>";
+
+echo "<input type='submit' name='update_shipment' value='Update Shipment'>";
 echo "</form>";
+
 
 // HTML Form for Complete Purchase Details
 echo "<form method='post'>";
