@@ -1,8 +1,22 @@
 <?php
 include 'connect_db.php';
 
-// Update Incoming Shipment...
-// [Same as before]
+// Update Incoming Shipment
+if (isset($_POST['update_incoming'])) {
+    $licenseNumber = $_POST['license_number_incoming'];
+    $quantity = $_POST['quantity'];
+    $unloadingLocation = $_POST['unloading_location'];
+
+    $updateIncoming = $conn->prepare("UPDATE Shipments SET Quantity = ?, UnloadLocation = ?, Location = 'LoadedUnloaded' WHERE LicenseNumber = ? AND Status = 'Incoming' AND Location = 'LoadingUnloading'");
+    $updateIncoming->bind_param("iss", $quantity, $unloadingLocation, $licenseNumber);
+    
+    if ($updateIncoming->execute()) {
+        echo "<p style='color:green;'>Incoming shipment updated successfully for $licenseNumber.</p>";
+    } else {
+        echo "<p style='color:red;'>Error updating incoming shipment: " . $updateIncoming->error . "</p>";
+    }
+    $updateIncoming->close();
+}
 
 // Prepare for Outgoing Shipment
 if (isset($_POST['recordSale'])) {
@@ -34,8 +48,31 @@ if (isset($_POST['recordSale'])) {
     }
 }
 
+
+// Fetch Incoming Trucks
+$incomingTrucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Incoming' AND Location = 'LoadingUnloading'";
+$incomingTrucksResult = $conn->query($incomingTrucksQuery);
+
+// Fetch Outgoing Trucks
+$outgoingTrucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Outgoing' AND Location = 'LoadingUnloading'";
+$outgoingTrucksResult = $conn->query($outgoingTrucksQuery);
+
+// Fetch Widths for Outgoing Rolls
+$widthsQuery = "SELECT DISTINCT Width FROM Products WHERE Status = 'In-Stock'";
+$widthsResult = $conn->query($widthsQuery);
+
 // HTML Form for Incoming Shipment Update
-// [Same as before]
+echo "<form method='post'>";
+echo "<h2>Update Incoming Shipment</h2>";
+echo "Truck (License Number): <select name='license_number_incoming'>";
+while ($row = $incomingTrucksResult->fetch_assoc()) {
+echo "<option value='" . $row['LicenseNumber'] . "'>" . $row['LicenseNumber'] . "</option>";
+}
+echo "</select> <br>";
+echo "Quantity: <input type='number' name='quantity' required> <br>";
+echo "Unloading Location: <input type='text' name='unloading_location' required> <br>";
+echo "<input type='submit' name='update_incoming' value='Update Incoming Shipment'>";
+echo "</form>";
 
 // HTML Form for Outgoing Shipment Preparation
 echo "<form action='forklift_interface.php' method='post'>";
