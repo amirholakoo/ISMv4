@@ -37,9 +37,15 @@ if (isset($_POST['update_shipment'])) {
 $incomingTrucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Incoming'";
 $incomingTrucksResult = $conn->query($incomingTrucksQuery);
 
-// Fetch Suppliers
-$suppliersQuery = "SELECT SupplierID, SupplierName FROM Suppliers";
-$suppliersResult = $conn->query($suppliersQuery);
+// Fetch Supplier Name and Material Name
+$supplierQuery = $conn->prepare("SELECT SupplierName FROM Suppliers WHERE SupplierID = ?");
+$supplierQuery->bind_param("i", $supplierID);
+$supplierQuery->execute();
+$supplierResult = $supplierQuery->get_result();
+$supplierNameRow = $supplierResult->fetch_assoc();
+$supplierName = $supplierNameRow['SupplierName'];
+$supplierQuery->close();
+
 
 // HTML Form for Updating Shipments
 echo "<form method='post'>";
