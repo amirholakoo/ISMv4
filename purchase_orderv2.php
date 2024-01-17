@@ -1,6 +1,11 @@
 <?php
 include 'connect_db.php';
 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+
 // Update Shipments with Supplier and Material Information
 if (isset($_POST['update_shipment'])) {
     $licenseNumber = $_POST['license_number'];
