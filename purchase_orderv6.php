@@ -148,21 +148,30 @@ while ($row = $officeTrucksResult->fetch_assoc()) {
 }
 echo "</select> <br>";
 
-// Supplier, Material Type, and Material Name
-echo "Supplier Name: <select name='supplier_name'>";
-while ($row = $suppliersResult->fetch_assoc()) {
-    echo "<option value='" . $row['SupplierName'] . "'>" . $row['SupplierName'] . "</option>";
-}
-echo "</select> <br>";
+// Displaying Materials based on selected Supplier
+if ($selectedSupplierID != '') {
+    $materialsQuery = "SELECT MaterialID, MaterialType, MaterialName FROM RawMaterials WHERE SupplierID = $selectedSupplierID";
+    $materialsResult = $conn->query($materialsQuery);
 
-echo "Material Type: <input type='text' name='material_type' required><br>";
-echo "Material Name: <input type='text' name='material_name' required><br>";
+    if ($materialsResult->num_rows > 0) {
+        echo "<label for='material_id'>Select Material:</label>";
+        echo "<select name='material_id'>";
+        while ($row = $materialsResult->fetch_assoc()) {
+            echo "<option value='" . $row['MaterialID'] . "'>" . $row['MaterialType'] . " - " . $row['MaterialName'] . "</option>";
+        }
+        echo "</select> <br>";
+        echo "<input type='hidden' name='supplier_name' value='$selectedSupplierID'>";
+        //echo "<input type='submit' name='update_shipment' value='Update Shipment'>";
+    } else {
+        echo "No materials for selected supplier.";
+    }
+}
 
 // Weight, Price, and Other Details
 echo "Weight1: <input type='number' name='weight1' required><br>";
 echo "Weight2: <input type='number' name='weight2' required><br>";
-echo "Price per KG: <input type='number' step='0.01' name='price_per_kg' required><br>";
-echo "Shipping Cost: <input type='number' step='0.01' name='shipping_cost' required><br>";
+echo "Price per KG: <input type='number' step='0.1' name='price_per_kg' required><br>";
+echo "Shipping Cost: <input type='number' step='1' name='shipping_cost' required><br>";
 echo "VAT: <input type='checkbox' name='vat'><br>";
 echo "Invoice Status: <select name='invoice_status'><option value='Received'>Received</option><option value='NA'>NA</option></select><br>";
 echo "Payment Status: <select name='payment_status'><option value='Paid'>Paid</option><option value='Terms'>Terms</option></select><br>";
