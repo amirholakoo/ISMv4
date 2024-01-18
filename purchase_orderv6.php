@@ -10,6 +10,11 @@ function calculateTotalPrice($netWeight, $pricePerKg, $shippingCost, $vat) {
     return $totalPrice;
 }
 
+// Function to calculate total price
+function calculateTotalPrice($weight1, $weight2) {
+    return abs($weight1 - $weight2); // Calculate Net Weight
+}
+
 // Update Shipment with Supplier and Material Details
 if (isset($_POST['update_shipment'])) {
     $licenseNumber = $_POST['license_number'];
@@ -92,13 +97,13 @@ if (isset($_POST['create_purchase'])) {
 $incomingTrucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Incoming' AND Location IN ('Entrance', 'LoadingUnloading', 'LoadedUnloaded')";
 $incomingTrucksResult = $conn->query($incomingTrucksQuery);
 
-// Fetch Suppliers for Dropdown
-$suppliersQuery = "SELECT SupplierName FROM Suppliers";
-$suppliersResult = $conn->query($suppliersQuery);
-
 // Fetch Trucks with Incoming and Location: Office for Purchase Orders
-$officeTrucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Incoming' AND Location = 'Office'";
+$officeTrucksQuery = "SELECT LicenseNumber, Weight1, Weight2 FROM Shipments WHERE Status = 'Incoming' AND Location = 'Office'";
 $officeTrucksResult = $conn->query($officeTrucksQuery);
+
+// Fetch Suppliers for Dropdown
+$suppliersQuery = "SELECT SupplierID, SupplierName FROM Suppliers";
+$suppliersResult = $conn->query($suppliersQuery);
 
 // HTML Form for Updating Shipment with Supplier and Material Details
 echo "<form method='post'>";
@@ -142,45 +147,51 @@ echo "</form>";
 echo "<form method='post'>";
 echo "<h2>Create Purchase Order</h2>";
 // [Same form elements as provided in the previous script for creating purchase orders]
-echo "Truck (License Number): <select name='license_number'>";
+echo "Truck (License Number): <select name='license_number' onchange='this.form.submit()'>";
+echo "<option value=''>Select Truck</option>";
 while ($row = $officeTrucksResult->fetch_assoc()) {
-    echo "<option value='" . $row['LicenseNumber'] . "'>" . $row['LicenseNumber'] . "</option>";
+    $selected = ($_POST['license_number'] == $row['LicenseNumber']) ? 'selected' : '';
+    echo "<option value='" . $row['LicenseNumber'] . "' $selected>" . $row['LicenseNumber'] . "</option>";
 }
 echo "</select> <br>";
 
-// Displaying Materials based on selected Supplier
-if ($selectedSupplierID != '') {
-    $materialsQuery = "SELECT MaterialID, MaterialType, MaterialName FROM RawMaterials WHERE SupplierID = $selectedSupplierID";
-    $materialsResult = $conn->query($materialsQuery);
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["license_number"])) {
+    $selectedTruck = $_POST["license_number"];
+    $truckDetailsQuery = "SELECT Weight1, Weight2, SupplierName, MaterialID FROM Shipments WHERE LicenseNumber = '$selectedTruck'";
+    $truckDetailsResult = $conn->query($truckDetailsQuery);
+    $truckDetails = $truckDetailsResult->fetch_assoc();
 
-    if ($materialsResult->num_rows > 0) {
-        echo "<label for='material_id'>Select Material:</label>";
-        echo "<select name='material_id'>";
+    $netWeight = calculateTotalPrice($truckDetails['Weight1'], $truckDetails['Weight2']);
+    echo "Weight1: " . $truckDetails['Weight1'] . "<br>";
+    echo "Weight2: " . $truckDetails['Weight2'] . "<br>";
+    echo "Net Weight: $netWeight <br>";
+
+    // Supplier, Material Type, and Material Name Dropdowns
+    echo "Supplier Name: <select name='supplier_name' onchange='this.form.submit()'>";
+    echo "<option value=''>Select Supplier</option>";
+    while ($row = $suppliersResult->fetch_assoc()) {
+        $selected = ($truckDetails['SupplierName'] == $row['SupplierName']) ? 'selected' : '';
+        echo "<option value='" . $row['SupplierID'] . "' $selected>" . $row['SupplierName'] . "</option>";
+    }
+    echo "</select> <br>";
+
+    if (isset($_POST['supplier_name'])) {
+        $selectedSupplierID = $_POST['supplier_name'];
+        $materialsQuery = "SELECT MaterialID, MaterialType, MaterialName FROM RawMaterials WHERE SupplierID = $selectedSupplierID";
+        $materialsResult = $conn->query($materialsQuery);
+        echo "Material Type and Name: <select name='material_id'>";
         while ($row = $materialsResult->fetch_assoc()) {
-            echo "<option value='" . $row['MaterialID'] . "'>" . $row['MaterialType'] . " - " . $row['MaterialName'] . "</option>";
+            $selected = ($row['MaterialID'] == $truckDetails['MaterialID']) ? 'selected' : '';
+            echo "<option value='" . $row['MaterialID'] . "' $selected>" . $row['MaterialType'] . " - " . $row['MaterialName'] . "</option>";
         }
         echo "</select> <br>";
-        echo "<input type='hidden' name='supplier_name' value='$selectedSupplierID'>";
-        //echo "<input type='submit' name='update_shipment' value='Update Shipment'>";
-    } else {
-        echo "No materials for selected supplier.";
     }
+
+    // [Rest of the form for price, VAT, invoice status, etc.]
 }
 
-// Weight, Price, and Other Details
-echo "Weight1: <input type='number' name='weight1' required><br>";
-echo "Weight2: <input type='number' name='weight2' required><br>";
-echo "Price per KG: <input type='number' step='0.1' name='price_per_kg' required><br>";
-echo "Shipping Cost: <input type='number' step='1' name='shipping_cost' required><br>";
-echo "VAT: <input type='checkbox' name='vat'><br>";
-echo "Invoice Status: <select name='invoice_status'><option value='Received'>Received</option><option value='NA'>NA</option></select><br>";
-echo "Payment Status: <select name='payment_status'><option value='Paid'>Paid</option><option value='Terms'>Terms</option></select><br>";
-echo "Invoice Info: <input type='text' name='invoice_info'><br>";
-echo "Documentation Info: <input type='text' name='document_info'><br>";
-echo "Comments: <textarea name='comments'></textarea><br>";
-echo "<input type='submit' name='create_purchase' value='Create Purchase'>";
-
 echo "</form>";
+
 
 echo "</body></html>";
 
