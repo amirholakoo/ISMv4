@@ -93,7 +93,7 @@ $incomingTrucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Inco
 $incomingTrucksResult = $conn->query($incomingTrucksQuery);
 
 // Fetch Suppliers for Dropdown
-$suppliersQuery = "SELECT SupplierID, SupplierName FROM Suppliers";
+$suppliersQuery = "SELECT SupplierName FROM Suppliers";
 $suppliersResult = $conn->query($suppliersQuery);
 
 // Fetch Trucks with Incoming and Location: Office for Purchase Orders
