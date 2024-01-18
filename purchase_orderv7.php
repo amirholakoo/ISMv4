@@ -18,103 +18,96 @@ if ($incomingShipmentsResult->num_rows > 0) {
 }
 
 // [Bottom Section will go here]
-// Handle the creation of the purchase order
-if (isset($_POST['create_purchase_order'])) {
-    // Extract and sanitize input data
-    $licenseNumber = $_POST['license_number'];
-    $supplierID = $_POST['supplier_id'];
-    $materialID = $_POST['material_id'];
-    $weight1 = $_POST['weight1'];
-    $weight2 = $_POST['weight2'];
-    $netWeight = abs($weight1 - $weight2);
+// ...
+
+// Handle Purchase Order Creation
+if (isset($_POST['create_purchase'])) {
+    // Retrieve form data
+    $licenseNumber = $_POST['license_number_po'];
     $pricePerKg = $_POST['price_per_kg'];
     $shippingCost = $_POST['shipping_cost'];
     $vat = isset($_POST['vat']) ? 'YES' : 'NO';
-    $totalPrice = ($netWeight * $pricePerKg) + $shippingCost;
-    if ($vat === 'YES') {
-        $totalPrice *= 1.09; // Adding 9% VAT
-    }
     $invoiceStatus = $_POST['invoice_status'];
     $paymentStatus = $_POST['payment_status'];
     $invoiceNumber = $_POST['invoice_number'];
     $documentInfo = $_POST['document_info'];
     $comments = $_POST['comments'];
-    $exitTime = date("Y-m-d H:i:s");
+
+    // Calculate total price
+    $netWeight = abs($_POST['weight1'] - $_POST['weight2']);
+    $totalPrice = ($pricePerKg * $netWeight) + $shippingCost;
+    if ($vat === 'YES') {
+        $totalPrice *= 1.09; // Adding 9% VAT
+    }
 
     // Begin Transaction
     $conn->begin_transaction();
-
     try {
-        // Insert into Purchases
-        $insertPurchase = "INSERT INTO Purchases (SupplierID, TruckID, LicenseNumber, MaterialID, Weight1, Weight2, NetWeight, PricePerKG, ShippingCost, VAT, TotalPrice, InvoiceStatus, PaymentStatus, InvoiceNumber, DocumentInfo, Comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($insertPurchase);
-        $stmt->bind_param("iisiddsdssssss", $supplierID, $licenseNumber, $materialID, $weight1, $weight2, $netWeight, $pricePerKg, $shippingCost, $vat, $totalPrice, $invoiceStatus, $paymentStatus, $invoiceNumber, $documentInfo, $comments);
-        $stmt->execute();
-        $purchaseID = $conn->insert_id;
+        // Insert into Purchases table
+        $insertPurchaseQuery = "INSERT INTO Purchases (SupplierID, TruckID, LicenseNumber, MaterialID, MaterialType, MaterialName, Weight1, Weight2, NetWeight, PricePerKG, ShippingCost, VAT, TotalPrice, InvoiceStatus, PaymentStatus, InvoiceNumber, DocumentInfo, Comments) SELECT SupplierID, TruckID, LicenseNumber, MaterialID, MaterialType, MaterialName, Weight1, Weight2, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM Shipments WHERE LicenseNumber = ?";
+        $insertPurchaseStmt = $conn->prepare($insertPurchaseQuery);
+        $insertPurchaseStmt->bind_param("ddddsssssss", $netWeight, $pricePerKg, $shippingCost, $vat, $totalPrice, $invoiceStatus, $paymentStatus, $invoiceNumber, $documentInfo, $comments, $licenseNumber);
+        $insertPurchaseStmt->execute();
 
-        // Update Shipments
-        $updateShipment = "UPDATE Shipments SET ExitTime = ?, PricePerKG = ?, ShippingCost = ?, PurchaseID = ?, VAT = ?, InvoiceStatus = ?, PaymentStatus = ?, DocumentInfo = ?, Comments = ?, Status = 'Delivered', Location = 'Delivered' WHERE LicenseNumber = ?";
-        $stmt = $conn->prepare($updateShipment);
-        $stmt->bind_param("sddsssss", $exitTime, $pricePerKg, $shippingCost, $purchaseID, $vat, $invoiceStatus, $paymentStatus, $documentInfo, $comments, $licenseNumber);
-        $stmt->execute();
+        // Update Shipments table
+        $updateShipmentQuery = "UPDATE Shipments SET ExitTime = NOW(), PricePerKG = ?, ShippingCost = ?, PurchaseID = LAST_INSERT_ID(), VAT = ?, InvoiceStatus = ?, PaymentStatus = ?, DocumentInfo = ?, Comments = ?, Status = 'Delivered', Location = 'Delivered' WHERE LicenseNumber = ?";
+        $updateShipmentStmt = $conn->prepare($updateShipmentQuery);
+        $updateShipmentStmt->bind_param("ddsssss", $pricePerKg, $shippingCost, $vat, $invoiceStatus, $paymentStatus, $documentInfo, $comments, $licenseNumber);
+        $updateShipmentStmt->execute();
 
-        // Update Trucks
-        $updateTruck = "UPDATE Trucks SET Status = 'Free' WHERE LicenseNumber = ?";
-        $stmt = $conn->prepare($updateTruck);
-        $stmt->bind_param("s", $licenseNumber);
-        $stmt->execute();
+        // Update Truck status
+        $updateTruckQuery = "UPDATE Trucks SET Status = 'Free' WHERE LicenseNumber IN (SELECT LicenseNumber FROM Shipments WHERE LicenseNumber = ?)";
+        $updateTruckStmt = $conn->prepare($updateTruckQuery);
+        $updateTruckStmt->bind_param("s", $licenseNumber);
+        $updateTruckStmt->execute();
 
         $conn->commit();
-        echo "<p style='color:green;'>Purchase order created and shipment updated successfully!</p>";
+        echo "<p style='color:green;'>Purchase order created successfully.</p>";
     } catch (Exception $e) {
         $conn->rollback();
         echo "<p style='color:red;'>Error creating purchase order: " . $e->getMessage() . "</p>";
     }
 }
 
-// Fetch Trucks for Dropdown
-$trucksQuery = "SELECT LicenseNumber FROM Shipments WHERE Status = 'Incoming' AND Location = 'Office'";
-$trucksResult = $conn->query($trucksQuery);
+// Fetch Trucks for Purchase Order
+$trucksQueryPO = "SELECT s.LicenseNumber, s.SupplierName, s.Weight1, s.Weight2 FROM Shipments s JOIN Trucks t ON s.TruckID = t.TruckID WHERE s.Status = 'Incoming' AND s.Location = 'Office' AND t.Status = 'Busy'";
+$trucksResultPO = $conn->query($trucksQueryPO);
 
-// Fetch Suppliers for Dropdown
-$suppliersQuery = "SELECT SupplierID, SupplierName FROM Suppliers";
-$suppliersResult = $conn->query($suppliersQuery);
-
-// HTML Form for Creating Purchase Order
-echo "<form method='post'>";
+// HTML Form for Purchase Order Creation
 echo "<h2>Create Purchase Order</h2>";
-
-// Truck Selection
-echo "Truck (License Number): <select name='license_number'>";
-while ($row = $trucksResult->fetch_assoc()) {
-    echo "<option value='" . $row['LicenseNumber'] . "'>" . $row['LicenseNumber'] . "</option>";
+echo "<form method='post'>";
+echo "Truck (License Number): <select name='license_number_po' onchange='this.form.submit()'>";
+echo "<option value=''>Select a Truck</option>";
+while ($row = $trucksResultPO->fetch_assoc()) {
+    $selected = ($_POST['license_number_po'] == $row['LicenseNumber']) ? 'selected' : '';
+    echo "<option value='".$row['LicenseNumber']."' $selected>".$row['LicenseNumber']." - ".$row['SupplierName']."</option>";
 }
 echo "</select> <br>";
 
-// Supplier Selection
-echo "Supplier Name: <select name='supplier_id'>";
-while ($row = $suppliersResult->fetch_assoc()) {
-    echo "<option value='" . $row['SupplierID'] . "'>" . $row['SupplierName'] . "</option>";
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["license_number_po"])) {
+    // Display additional fields for selected truck
+    echo "Net Weight: <input type='text' name='net_weight' value='".abs($selectedTruckInfo['Weight1'] - $selectedTruckInfo['Weight2'])."' readonly><br>";
+    
+    echo "Price per KG: <input type='number' step='0.01' name='price_per_kg' required><br>";
+    echo "Shipping Cost: <input type='number' step='0.01' name='shipping_cost' required><br>";
+    echo "VAT: <input type='checkbox' name='vat'><br>";
+    echo "Invoice Status: <select name='invoice_status'>
+        <option value='NA'>NA</option>
+        <option value='Received'>Received</option>
+    </select><br>";
+    echo "Payment Status: <select name='payment_status'>
+        <option value='Terms'>Terms</option>
+        <option value='Paid'>Paid</option>
+    </select><br>";
+    echo "Invoice Number: <input type='text' name='invoice_number'><br>";
+    echo "Document Info: <textarea name='document_info'></textarea><br>";
+    echo "Comments: <textarea name='comments'></textarea><br>";
+    echo "<input type='submit' name='create_purchase' value='Create Purchase'>";
 }
-echo "</select> <br>";
-
-// Material Selection
-// [Add material selection dropdowns here, similar to the supplier selection]
-
-// Additional Fields
-echo "Weight1: <input type='number' name='weight1' required> <br>";
-echo "Weight2: <input type='number' name='weight2' required> <br>";
-echo "Price Per KG: <input type='number' step='0.01' name='price_per_kg' required> <br>";
-echo "Shipping Cost: <input type='number' step='0.01' name='shipping_cost' required> <br>";
-echo "VAT: <input type='checkbox' name='vat'> <br>";
-echo "Invoice Status: <select name='invoice_status'><option value='NA'>NA</option><option value='Received'>Received</option></select> <br>";
-echo "Payment Status: <select name='payment_status'><option value='Terms'>Terms</option><option value='Paid'>Paid</option></select> <br>";
-echo "Invoice Number: <input type='text' name='invoice_number'> <br>";
-echo "Document Info: <textarea name='document_info'></textarea> <br>";
-echo "Comments: <textarea name='comments'></textarea> <br>";
-
-echo "<input type='submit' name='create_purchase_order' value='Create Purchase Order'>";
 echo "</form>";
+
+// ...
+
 
 echo "</body></html>";
 ?>
