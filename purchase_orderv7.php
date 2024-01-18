@@ -70,22 +70,42 @@ if (isset($_POST['create_purchase'])) {
 }
 
 // Fetch Trucks for Purchase Order
-$trucksQueryPO = "SELECT s.LicenseNumber, s.SupplierName, s.Weight1, s.Weight2 FROM Shipments s JOIN Trucks t ON s.TruckID = t.TruckID WHERE s.Status = 'Incoming' AND s.Location = 'Office' AND t.Status = 'Busy'";
-$trucksResultPO = $conn->query($trucksQueryPO);
+function getTrucksForPO($conn) {
+    $trucksQueryPO = "SELECT s.LicenseNumber, s.SupplierName, s.Weight1, s.Weight2 FROM Shipments s JOIN Trucks t ON s.TruckID = t.TruckID WHERE s.Status = 'Incoming' AND s.Location = 'Office' AND t.Status = 'Busy'";
+    return $conn->query($trucksQueryPO);
+}
+
+$trucksResultPO = getTrucksForPO($conn);
+$selectedLicenseNumber = isset($_POST['license_number_po']) ? $_POST['license_number_po'] : '';
 
 // HTML Form for Purchase Order Creation
 echo "<h2>Create Purchase Order</h2>";
 echo "<form method='post'>";
 echo "Truck (License Number): <select name='license_number_po' onchange='this.form.submit()'>";
 echo "<option value=''>Select a Truck</option>";
+
 while ($row = $trucksResultPO->fetch_assoc()) {
-    $selected = ($_POST['license_number_po'] == $row['LicenseNumber']) ? 'selected' : '';
+    $selected = ($row['LicenseNumber'] == $selectedLicenseNumber) ? 'selected' : '';
     echo "<option value='".$row['LicenseNumber']."' $selected>".$row['LicenseNumber']." - ".$row['SupplierName']."</option>";
 }
 echo "</select> <br>";
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["license_number_po"])) {
+if ($selectedLicenseNumber != '') {
+    // Re-fetch trucks for PO to get selected truck details
+    $trucksResultPO = getTrucksForPO($conn);
+    while ($row = $trucksResultPO->fetch_assoc()) {
+        if ($row['LicenseNumber'] == $selectedLicenseNumber) {
+            $selectedTruckInfo = $row;
+            break;
+        }
+    }
+
     // Display additional fields for selected truck
+    $netWeight = abs($selectedTruckInfo['Weight1'] - $selectedTruckInfo['Weight2']);
+    echo "Net Weight: <input type='text' name='net_weight' value='".$netWeight."' readonly><br>";
+    
+    // Additional fields for price, shipping cost, VAT, etc.
+    // [Add fields for price per kg, shipping cost, VAT, invoice status, payment status, invoice number, document info, comments]
     echo "Net Weight: <input type='text' name='net_weight' value='".abs($selectedTruckInfo['Weight1'] - $selectedTruckInfo['Weight2'])."' readonly><br>";
     
     echo "Price per KG: <input type='number' step='0.01' name='price_per_kg' required><br>";
@@ -102,8 +122,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["license_number_po"])) 
     echo "Invoice Number: <input type='text' name='invoice_number'><br>";
     echo "Document Info: <textarea name='document_info'></textarea><br>";
     echo "Comments: <textarea name='comments'></textarea><br>";
+    
     echo "<input type='submit' name='create_purchase' value='Create Purchase'>";
 }
+
+
+
 echo "</form>";
 
 // ...
